@@ -2,12 +2,93 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <conio.h>//Windows only
+#include <conio.h>  //Windows only
+
+#define SCREENLENX 20
+#define SCREENLENY 41   //Including the null terminator.
+
+
+
+typedef struct
+{
+  int age;
+  int x;
+  int y;
+} SnakeBodyElem;
+
+typedef struct
+{
+    SnakeBodyElem *items;
+    int count;
+    int capacity;
+} SnakeBodyArray;
+
+SnakeBodyArray allocateItem(SnakeBodyArray snakeBody, int x, int y, int length)
+{
+    SnakeBodyArray snakeBodyNew = snakeBody;
+    SnakeBodyElem bodyElem = {0};
+    int i;
+    for(i = 0; i < length; i++)
+    {
+        if(snakeBodyNew.count >= snakeBodyNew.capacity)
+        {
+            if(snakeBodyNew.capacity == 0)
+                snakeBodyNew.capacity = 16;
+            else
+                snakeBodyNew.capacity *= 2;
+            snakeBodyNew.items = realloc(snakeBodyNew.items, snakeBodyNew.capacity*sizeof(*snakeBodyNew.items));
+        }
+
+        if(i == length-1)
+        {
+            bodyElem.x = x;
+            bodyElem.y = y;
+            bodyElem.age = length;
+        }
+        else
+        {
+            bodyElem = snakeBody.items[i];
+            bodyElem.age--;
+        }
+
+        snakeBodyNew.items[snakeBodyNew.count++] = bodyElem;
+    }
+    return snakeBodyNew;
+}
+
 
 //Clears the old frame by printing empty lines.
 void clearFrame()
 {
     printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+}
+
+//Prints the screen
+void printScreenGameOver(char screen[SCREENLENX][SCREENLENY])
+{
+
+    int i;
+    for(i = 0; i < 20; i++)
+    {
+        printf("%s\n", screen[i]);
+    }
+}
+
+void printScreen(char screen[SCREENLENX][SCREENLENY], char apple, char body, char head, int headPosX, int headPosY, SnakeBodyArray snakeBody)
+{
+
+    int i;
+
+    for(i = 0; i < snakeBody.count; i++)
+    {
+        screen[snakeBody.items[i].y][snakeBody.items[i].x] = body;
+    }
+    screen[headPosY][headPosX] = head;
+
+    for(i = 0; i < 20; i++)
+    {
+        printf("%s\n", screen[i]);
+    }
 }
 
 //Checks for keyboard input until finds a valid key, ignores all other keys.
@@ -31,7 +112,7 @@ char keyboardInput()
 
 int main()
 {
-    char screen[20][41] = {
+    char screen[SCREENLENX][SCREENLENY] = {
     {"........................................"},
     {"........................................"},
     {"........................................"},
@@ -53,12 +134,19 @@ int main()
     {"........................................"},
     {"........................................"}
     };
+
     int headPosX = 5;
     int headPosY = 5;
-    int i;
+    int length = 0;
+
     char key;
     char pressedValidKey;
     char head = 'O';
+    char body = '#';
+    char apple = '$';
+
+    SnakeBodyArray snakeBody = {0};
+
     clock_t c0 = clock() / (CLOCKS_PER_SEC / 1000);
     while(1)
     {
@@ -72,16 +160,30 @@ int main()
             key = keyboardInput();
             //Saves the valid key into a different variable so the snake keeps moving.
             if(key=='w' || key=='s' || key=='d' || key=='a')
+            {
                 pressedValidKey = key;
+            }
 
             if(pressedValidKey=='w')
+            {
                 headPosY--;
-            else if(pressedValidKey=='s')
+                length++;
+            }
+            else if(pressedValidKey=='s')\
+            {
                 headPosY++;
+                length++;
+            }
             else if(pressedValidKey=='d')
+            {
                 headPosX++;
+                length++;
+            }
             else if(pressedValidKey=='a')
+            {
                 headPosX--;
+                length++;
+            }
 
             //Resets the position of the head if it goes outside of the screen.
             if(headPosX == 40)
@@ -93,12 +195,19 @@ int main()
             else if(headPosY == -1)
                 headPosY = 19;
 
-            screen[headPosY][headPosX] = head;
-            for(i = 0; i < 20; i++)
+
+            if((screen[headPosY][headPosX] == 'O' || screen[headPosY][headPosX] == '#') && (length >= 1))
             {
-                printf("%s\n", screen[i]);
+                printScreenGameOver(screen);
+                printf("Game Over\n");
+                exit(0);
             }
+
+            snakeBody = allocateItem(snakeBody, headPosX, headPosY, length);
+            printScreen(screen, apple, body, head, headPosX, headPosY, snakeBody);
+
         }
+
     }
 
     return 0;
